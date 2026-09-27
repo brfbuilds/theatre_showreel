@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benjamin Fowler — Actor</title>
+<meta name="description" content="Benjamin Fowler, actor. Walk the hallway of credits and take your seat for the showreel.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Benjamin Fowler — Actor">
+<meta property="og:description" content="Step into the cinema: selected credits and showreel.">
+<meta property="og:image" content="https://brfbuilds.github.io/theatre_showreel/preview.jpg">
+<meta property="og:url" content="https://brfbuilds.github.io/theatre_showreel/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+  :root{
+    --gold:#d8b46a; --gold-dim:#8f7236; --cream:#f4e9cf; --ink:#0b0708; --red:#6e0f18;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none!important}
+  html,body{background:var(--ink);color:var(--cream);font-family:'Josefin Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  #stage{touch-action:none}
+  body.locked{overflow:hidden}
+  #stage{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+  #css3d{position:fixed;inset:0;pointer-events:none}
+  #css3d .reel{width:1600px;height:900px;background:#000;opacity:0;transition:opacity 1.2s ease;overflow:hidden;position:relative}
+  #css3d .reel.on{opacity:1}
+  #css3d .reel video{width:100%;height:100%;object-fit:contain;display:block;filter:contrast(1.04) saturate(.97)}
+  #css3d .reel::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.45) 100%)}
+
+  /* film texture */
+  #fade{position:fixed;inset:0;z-index:15;background:#000;opacity:0;pointer-events:none;transition:opacity .6s ease}
+  #fade.on{opacity:1;pointer-events:auto}
+  #vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+  /* HUD */
+  .hud{position:fixed;z-index:5;pointer-events:none;transition:opacity .8s ease}
+  #brand{top:22px;left:26px}
+  #brand .n{font-family:Limelight,serif;font-size:20px;letter-spacing:.08em;color:var(--cream)}
+  #brand .r{font-size:11px;letter-spacing:.42em;color:var(--gold);margin-top:4px;text-transform:uppercase}
+  #skip{top:20px;right:22px;pointer-events:auto}
+  .btn{font:600 11px/1 'Josefin Sans',sans-serif;letter-spacing:.28em;text-transform:uppercase;color:var(--cream);
+    background:rgba(20,6,8,.55);border:1px solid rgba(216,180,106,.55);padding:12px 16px 10px;border-radius:2px;cursor:pointer;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .25s,border-color .25s,color .25s}
+  .btn:hover,.btn:focus-visible{background:rgba(110,15,24,.75);border-color:var(--gold);outline:none}
+  #hint{left:50%;bottom:34px;transform:translateX(-50%);text-align:center;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--gold)}
+  #hint .chev{width:14px;height:14px;border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);transform:rotate(45deg);margin:10px auto 0;animation:bob 1.6s ease-in-out infinite}
+  #hint .chev.up{margin:0 auto 10px;animation-name:bobUp}
+  @keyframes bobUp{0%,100%{transform:translateY(0) rotate(225deg);opacity:.4}50%{transform:translateY(-6px) rotate(225deg);opacity:1}}
+  .hint-touch{display:none}
+  @media (pointer:coarse){ .hint-mouse{display:none!important} .hint-touch{display:block} span.hint-touch{display:inline} }
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(45deg);opacity:.4}50%{transform:translateY(6px) rotate(45deg);opacity:1}}
+  #caption{left:26px;bottom:30px;max-width:min(440px,70vw);opacity:0}
+  #caption .y{font-size:11px;letter-spacing:.4em;color:var(--gold)}
+  #caption .t{font-family:Limelight,serif;font-size:clamp(22px,3vw,32px);line-height:1.1;margin:6px 0 4px;color:var(--cream)}
+  #caption .ro{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:19px;color:#e6d6b0}
+  #rail{right:26px;top:50%;height:36vh;transform:translateY(-50%);width:1px;background:rgba(216,180,106,.25)}
+  #rail .dot{position:absolute;left:-3px;width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold);top:0}
+  #rail .lab{position:absolute;right:12px;font-size:9px;letter-spacing:.3em;color:rgba(244,233,207,.5);white-space:nowrap;text-transform:uppercase}
+  /* lobby music volume */
+  #musicVol{top:66px;right:22px;display:flex;align-items:center;gap:10px;pointer-events:auto;padding:7px 12px 6px;
+    background:rgba(20,6,8,.55);border:1px solid rgba(216,180,106,.35);border-radius:2px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  #musicVol label{font:600 10px/1 'Josefin Sans',sans-serif;letter-spacing:.25em;text-transform:uppercase;color:var(--cream);white-space:nowrap}
+  #musicVol label span{color:var(--gold);font-size:13px;letter-spacing:0;margin-right:4px}
+  #musicSlider{width:110px;accent-color:var(--gold);cursor:pointer}
+  @media (max-width:640px){ #musicVol{top:54px;right:14px;padding:6px 10px 5px} #musicSlider{width:90px} #musicVol label{font-size:9px;letter-spacing:.18em} }
+  body.nowebgl #musicVol{display:none}
+  /* the remote control */
+  #remote{right:22px;bottom:22px;width:236px;padding:14px 14px 12px;border-radius:26px 26px 18px 18px;opacity:0;pointer-events:none;
+    background:linear-gradient(160deg,#2a1d19,#120b09 70%);border:1px solid rgba(216,180,106,.45);
+    box-shadow:0 18px 50px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,230,180,.12);display:flex;flex-direction:column;gap:9px;transition:opacity .5s ease}
+  #remote.on{opacity:1;pointer-events:auto}
+  #remote.on.idle{opacity:.38}
+  #remote .grip{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:.35em;color:rgba(216,180,106,.8);text-transform:uppercase}
+  #remote .grip button{background:none;border:0;color:var(--gold);font:600 16px/1 'Josefin Sans',sans-serif;cursor:pointer;padding:2px 6px}
+  #remote .led{width:6px;height:6px;border-radius:50%;background:#e33;box-shadow:0 0 6px #f44;display:inline-block;margin-right:6px;vertical-align:1px}
+  .rm-screen{background:#0b1a12;border:1px solid #1d3a28;border-radius:6px;padding:7px 9px 6px;color:#9fe0b0;font:600 11px/1.3 'Josefin Sans',sans-serif;letter-spacing:.12em;display:flex;justify-content:space-between;gap:8px;text-transform:uppercase;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 12px rgba(0,0,0,.6)}
+  #rmSeek{width:100%;accent-color:var(--gold);cursor:pointer;height:18px}
+  .rm-row{display:flex;gap:6px;justify-content:space-between}
+  .rk{flex:1;font:600 10px/1 'Josefin Sans',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--cream);cursor:pointer;
+    background:linear-gradient(#3a2a24,#231713);border:1px solid rgba(216,180,106,.35);border-radius:9px;padding:9px 6px 7px;box-shadow:0 2px 0 #000;transition:background .2s,border-color .2s,transform .08s}
+  .rk:hover,.rk:focus-visible{border-color:var(--gold);outline:none}
+  .rk:active{transform:translateY(1px);box-shadow:0 1px 0 #000}
+  .rk.big{flex:1.3;font-size:15px;letter-spacing:0;padding:8px 6px 6px;background:linear-gradient(#7a1420,#4a0a12);border-color:var(--gold)}
+  .rk.chan{font-size:9px;letter-spacing:.12em;padding:8px 4px 6px}
+  .rk.chan.active{background:linear-gradient(#b8903f,#8a6424);color:#1a0c04;border-color:#f0d89c}
+  .rm-vol{display:flex;align-items:center;gap:8px;font:600 9px/1 'Josefin Sans',sans-serif;letter-spacing:.25em;text-transform:uppercase;color:rgba(216,180,106,.9)}
+  .rm-vol input{flex:1;accent-color:var(--gold);cursor:pointer}
+  .rm-vol span{width:22px;text-align:right;color:#9fe0b0;letter-spacing:0;font-variant-numeric:tabular-nums}
+  #remote.mini{width:auto;padding:10px 14px}
+  #remote.mini > :not(.grip){display:none}
+  @media (max-width:640px){
+    #remote{left:12px;right:12px;bottom:12px;width:auto;border-radius:20px;padding:10px 12px 10px;gap:7px}
+    .rk{padding:8px 4px 6px}
+  }
+
+  /* tonight's features: pick a reel at your seat */
+  #choose{left:0;right:0;bottom:6vh;display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0;pointer-events:none;padding:0 16px}
+  #choose.on{opacity:1;pointer-events:auto}
+  #choose .ch-title{font-family:Limelight,Georgia,serif;font-size:clamp(22px,4vw,30px);color:var(--cream);text-shadow:0 2px 12px rgba(0,0,0,.8)}
+  #choose .ch-tix{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .ticket.mini{width:min(250px,42vw);padding:16px 18px 14px}
+  .ticket.mini .b{font-size:clamp(22px,4.4vw,30px);margin:6px 0 2px}
+  .ticket.mini .c{font-size:16px}
+  .ticket.mini:nth-child(2){transform:rotate(2deg)}
+  .ticket.mini:hover,.ticket.mini:focus-visible{transform:rotate(0) scale(1.04)}
+  #skipCd{left:50%;bottom:26px;transform:translateX(-50%);opacity:0;pointer-events:none}
+  #skipCd.on{opacity:1;pointer-events:auto}
+  #css3d .reel.static video{filter:contrast(1.4) brightness(1.6) blur(2px) grayscale(1)}
+
+  /* ticket gate */
+  #gate{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(20,4,6,.55),rgba(5,2,3,.92));transition:opacity 1s ease}
+  #gate.gone{opacity:0;pointer-events:none}
+  #gate{grid-template-rows:auto auto;align-content:center;gap:26px}
+  .gate-alt{display:flex;flex-direction:column;align-items:center;gap:12px}
+  #enterReel{font-size:12px;padding:13px 20px 11px;background:rgba(110,15,24,.7);border-color:var(--gold)}
+  .linkish{background:none;border:0;padding:4px;color:rgba(244,233,207,.7);font:500 13px/1.3 'Josefin Sans',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+  .linkish:hover,.linkish:focus-visible{color:var(--gold);outline:none}
+  /* box office: headshot, stats and skills */
+  .bo-card{width:min(640px,100%);text-align:left}
+  .bo-head{display:grid;grid-template-columns:120px minmax(0,1fr);gap:20px;align-items:center}
+  .bo-shot{width:120px;aspect-ratio:3/4;object-fit:cover;border:3px solid #b8903f;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .bo-card h2{margin-top:6px}
+  .btn.dl{margin-top:12px;text-decoration:none;display:inline-block}
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:22px 0 0}
+  .stats div{border:1px solid rgba(216,180,106,.3);padding:10px 10px 8px;min-width:0}
+  .stats dt{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold)}
+  .stats dd{font-size:15px;margin-top:6px;color:var(--cream)}
+  .stats dd.todo{font-style:italic;font-size:12px;color:rgba(244,233,207,.45)}
+  .skills-label{font-size:10px;letter-spacing:.35em;text-transform:uppercase;color:var(--gold);margin-top:18px}
+  .skills{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .skills li{font-size:12px;padding:6px 10px 5px;border:1px solid rgba(216,180,106,.35);border-radius:14px;color:var(--cream);background:rgba(216,180,106,.06)}
+  .bo-card p,.bo-card .row{margin-left:0;justify-content:flex-start}
+  @media (max-width:600px){ .bo-head{grid-template-columns:88px minmax(0,1fr);gap:14px} .bo-shot{width:88px} .stats{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .ticket{position:relative;width:min(520px,calc(100vw - 32px));background:#e9d9ae;color:#3b0c12;padding:30px 34px 26px;cursor:pointer;
+    border:none;text-align:center;font-family:'Josefin Sans',sans-serif;box-shadow:0 30px 80px rgba(0,0,0,.6);
+    transform:rotate(-2deg);transition:transform .35s ease, box-shadow .35s ease;
+    -webkit-mask:radial-gradient(circle 14px at 0 50%,transparent 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 14px at 100% 50%,transparent 98%,#000) right/51% 100% no-repeat;
+            mask:radial-gradient(circle 14px at 0 50%,transparent 98%,#000) left/51% 100% no-repeat,radial-gradient(circle 14px at 100% 50%,transparent 98%,#000) right/51% 100% no-repeat}
+  .ticket:hover,.ticket:focus-visible{transform:rotate(0deg) scale(1.02);outline:none}
+  .ticket .in{border:2px solid #3b0c12;outline:1px solid #3b0c12;outline-offset:4px;padding:18px 12px 16px}
+  .ticket .a{font-size:12px;letter-spacing:.6em;font-weight:600}
+  .ticket .b{font-family:Limelight,serif;font-size:clamp(34px,8vw,52px);margin:10px 0 2px;letter-spacing:.02em}
+  .ticket .c{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px}
+  .ticket .d{margin-top:16px;display:inline-block;font-size:12px;letter-spacing:.42em;font-weight:700;border-top:1px dashed #3b0c12;padding-top:12px}
+  .ticket .no{position:absolute;top:10px;right:16px;font-size:10px;letter-spacing:.2em;opacity:.7}
+  #loading{pointer-events:none;position:fixed;left:50%;bottom:40px;transform:translateX(-50%);z-index:21;font-size:10px;letter-spacing:.4em;color:var(--gold);text-transform:uppercase;transition:opacity .6s}
+  @media (max-width:640px){
+    #brand{top:16px;left:16px} #brand .n{font-size:16px}
+    #skip{top:14px;right:14px} .btn{padding:10px 12px 8px;letter-spacing:.2em}
+    #caption{left:16px;bottom:22px}
+    #rail{display:none}
+  }
+  @media (max-width:900px){ #caption{display:none} }
+  #skip{display:flex;gap:8px}
+  #more{right:26px;bottom:30px;pointer-events:none;opacity:0}
+  .short{display:none}
+  @media (max-width:900px){ #more{right:auto;left:50%;bottom:22px;transform:translateX(-50%)} }
+  @media (max-width:640px){ .long{display:none} .short{display:inline} #soundBtn{display:none} #skip{gap:6px} #brand .n{font-size:15px} }
+  #more.on{opacity:1;pointer-events:auto}
+  #rail .stop{position:absolute;left:-10px;width:21px;height:14px;margin-top:-7px;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto}
+  #rail .stop::after{content:"";position:absolute;left:8px;top:5px;width:5px;height:5px;border-radius:50%;background:rgba(216,180,106,.45);transition:transform .2s,background .2s}
+  #rail .stop:hover::after,#rail .stop:focus-visible::after{background:var(--gold);transform:scale(1.6)}
+  #rail .stop:focus-visible{outline:none}
+
+  /* panels */
+  .panel{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:16px;background:rgba(6,2,3,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    opacity:0;pointer-events:none;transition:opacity .35s ease}
+  .panel.open{opacity:1;pointer-events:auto}
+  .card{position:relative;width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:linear-gradient(#1c0a0d,#12060a);
+    border:1px solid rgba(216,180,106,.6);outline:1px solid rgba(216,180,106,.25);outline-offset:6px;padding:34px 30px 28px;color:var(--cream);text-align:center;
+    box-shadow:0 30px 90px rgba(0,0,0,.7)}
+  .card .x{position:absolute;top:10px;right:12px;background:none;border:0;color:var(--gold);font:400 26px/1 'Josefin Sans',sans-serif;cursor:pointer;padding:6px 10px}
+  .card .x:focus-visible{outline:1px solid var(--gold)}
+  .card .eyebrow{font-size:11px;letter-spacing:.45em;color:var(--gold);text-transform:uppercase}
+  .card h2{font-family:Limelight,Georgia,serif;font-weight:400;font-size:clamp(28px,6vw,40px);line-height:1.1;margin:10px 0 6px;text-wrap:balance}
+  .card .role{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:21px;color:#e6d6b0}
+  .card p{font-size:15px;line-height:1.6;color:rgba(244,233,207,.82);margin:18px auto 0;max-width:44ch}
+  .card p.placeholder{font-style:italic;color:rgba(244,233,207,.55);border:1px dashed rgba(216,180,106,.4);padding:12px 14px}
+  .card .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:24px}
+  .card a.btn{text-decoration:none;display:inline-block}
+  .card a.btn.primary{background:var(--red);border-color:var(--gold)}
+  .card .fine{font-size:12px;color:rgba(244,233,207,.55);margin-top:18px;line-height:1.5}
+  .card .fine code{font-family:inherit;letter-spacing:.08em;color:var(--cream)}
+  #detail .card{display:grid;grid-template-columns:minmax(0,190px) 1fr;gap:26px;text-align:left;width:min(760px,100%)}
+  #dImg{width:100%;height:auto;display:block;border:3px solid #b8903f;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+  #detail .card .row{justify-content:flex-start}
+  #detail .card p{margin-left:0}
+  #detail .card.has-stills{width:min(880px,100%)}
+  .stills{margin-top:22px}
+  .stills-label{font-size:11px;letter-spacing:.4em;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
+  .stills-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;max-height:196px;overflow-y:auto;padding-right:4px;scrollbar-width:thin}
+  .still{position:relative;width:100%;aspect-ratio:16/9;padding:0;border:1px solid rgba(216,180,106,.45);background:#000;cursor:zoom-in;overflow:hidden;transition:border-color .2s,transform .2s}
+  .still img{width:100%;height:100%;object-fit:cover;display:block}
+  .still.is-video::after{content:"▶";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:22px;text-shadow:0 2px 8px #000;background:rgba(0,0,0,.25)}
+  .still:hover,.still:focus-visible{border-color:var(--gold);transform:translateY(-2px);outline:none}
+  #lightbox{position:fixed;inset:0;z-index:40;background:rgba(4,2,2,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;
+    opacity:0;pointer-events:none;transition:opacity .3s ease}
+  #lightbox.open{opacity:1;pointer-events:auto}
+  #lbImg,#lbVid{max-width:min(1400px,100%);max-height:calc(100vh - 110px);object-fit:contain;border:3px solid #b8903f;box-shadow:0 20px 60px rgba(0,0,0,.7);background:#000}
+  .lb-bar{display:flex;align-items:center;gap:16px;color:var(--cream);font-size:12px;letter-spacing:.25em;text-transform:uppercase}
+  .lb-x{position:absolute;top:12px;right:16px;background:none;border:0;color:var(--gold);font:400 34px/1 'Josefin Sans',sans-serif;cursor:pointer;padding:6px 10px}
+  .lb-x:focus-visible{outline:1px solid var(--gold)}
+  body.nowebgl #lightbox{display:none}
+  #detail .card{grid-template-columns:minmax(0,190px) minmax(0,1fr)}
+  #detail .card > div{min-width:0}
+  @media (max-width:600px){ .stills-row{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));max-height:170px} #detail .card{grid-template-columns:minmax(0,1fr);text-align:center} #dImg{max-width:170px;margin:0 auto} #detail .card .row{justify-content:center} #detail .card p{margin-left:auto} }
+
+  /* plain version: read by search engines and screen readers; shown if 3D can't run */
+  #plain{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  html:has(body.nowebgl),body.nowebgl{height:auto;overflow:auto}
+  body.nowebgl #plain{position:static;width:auto;height:auto;overflow:visible;clip:auto;white-space:normal;max-width:760px;margin:0 auto;padding:48px 16px 80px}
+  body.nowebgl #skip,body.nowebgl #stage,body.nowebgl #css3d,body.nowebgl .hud,body.nowebgl #gate,body.nowebgl #loading,body.nowebgl #grain,body.nowebgl #vignette{display:none}
+  #plain h1{font-family:Limelight,Georgia,serif;font-weight:400;font-size:clamp(34px,7vw,48px);line-height:1.05}
+  #plain h2{font-family:Limelight,Georgia,serif;font-weight:400;font-size:24px;margin:34px 0 10px;color:var(--cream)}
+  .simple-bar{display:none;justify-content:flex-end;margin-bottom:18px}
+  body.simple-chosen .simple-bar{display:flex}
+  body.nowebgl .hud,body.nowebgl #say,body.nowebgl #fade{display:none!important}
+  #plain .skills{margin-top:9px}
+  #plain .skills li{padding:6px 10px 5px;border:1px solid rgba(216,180,106,.35);border-bottom:1px solid rgba(216,180,106,.35);font-size:12px}
+  #plain .stats{margin-top:6px}
+  .p-head{display:grid;grid-template-columns:140px minmax(0,1fr);gap:22px;align-items:center}
+  .p-head img{width:140px;aspect-ratio:3/4;object-fit:cover;border:3px solid #b8903f}
+  .p-box{margin-top:14px}
+  .p-bio p{font-size:15px;line-height:1.65;color:rgba(244,233,207,.85);margin-top:14px;max-width:65ch}
+  .p-rep{color:var(--gold)!important;font-size:13px!important}
+  .stats dd small{font-size:11px;color:rgba(244,233,207,.6)}
+  .p-sel li{display:grid;grid-template-columns:90px minmax(0,1fr);gap:12px;padding:14px 0}
+  .p-sel p{font-size:14px;line-height:1.55;color:rgba(244,233,207,.75);margin-top:4px}
+  .py{color:var(--gold);font-size:13px;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+  .pr{color:rgba(244,233,207,.75)}
+  @media (max-width:600px){ .p-head{grid-template-columns:96px minmax(0,1fr)} .p-head img{width:96px} .p-sel li{grid-template-columns:1fr;gap:2px} }
+  #plain .sub{letter-spacing:.4em;color:var(--gold);font-size:12px;margin:6px 0 24px}
+  #plain video{width:100%;height:auto;background:#000;margin:18px 0}
+  #plain .ytwrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;margin:18px 0}
+  #plain .ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  #css3d .reel .ytwrap, #css3d .reel .ytwrap iframe{width:100%;height:100%;border:0;display:block;pointer-events:none}
+  #css3d .reel.static .ytwrap{filter:contrast(1.4) brightness(1.6) blur(2px) grayscale(1)}
+  #plain ul{list-style:none;margin-top:12px}
+  #plain li{padding:8px 0;border-bottom:1px solid rgba(216,180,106,.2);font-size:15px}
+  #plain li b{font-family:Limelight,Georgia,serif;font-weight:400}
+  #plain a{color:var(--gold)}
+  /* usher speech bubble */
+  #say{position:fixed;left:0;top:0;z-index:6;pointer-events:none;max-width:min(260px,62vw);background:#f3e6c6;color:#3b0c12;
+    font:500 15px/1.35 'Josefin Sans',sans-serif;padding:11px 14px 9px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.45);
+    opacity:0;transform:translate(-50%,-100%) scale(.92);transition:opacity .35s ease,transform .35s ease}
+  #say.on{opacity:1;transform:translate(-50%,-100%) scale(1)}
+  #say::after{content:"";position:absolute;left:50%;bottom:-8px;margin-left:-8px;border:8px solid transparent;border-bottom:0;border-top-color:#f3e6c6}
+  #say b{font-family:Limelight,Georgia,serif;font-weight:400}
+  #say .ghost{visibility:hidden}
+  #say .typed{position:absolute;inset:0;padding:inherit}
+  @media (max-width:640px){ #say{font-size:13px;padding:9px 11px 7px} }
+  body.nowebgl #say{display:none}
+  @media (prefers-reduced-motion:reduce){ #hint .chev{animation:none} }
+</style>
+</head>
+<body class="locked">
+  <canvas id="stage" aria-label="3D cinema hallway"></canvas>
+  <div id="css3d"></div>
+  <div id="vignette"></div>
+  <div id="fade" aria-hidden="true"></div>
+
+  <div id="brand" class="hud"><div class="n">Benjamin Fowler</div><div class="r">Actor</div></div>
+  <div id="skip" class="hud"><button class="btn" id="boxBtn"><span class="long">Box office</span><span class="short">Contact</span></button><button class="btn" id="soundBtn" aria-pressed="true">Sound on</button><button class="btn" id="skipBtn"><span class="long">Skip to showreel</span><span class="short">Reel</span></button></div>
+  <div id="musicVol" class="hud">
+    <label for="musicSlider"><span aria-hidden="true">♪</span> Lobby music</label>
+    <input id="musicSlider" type="range" min="0" max="100" step="1" value="60" aria-label="Lobby music volume">
+  </div>
+  <div id="hint" class="hud" style="opacity:0"><div class="chev up hint-mouse"></div><span class="hint-mouse">Scroll up to walk the hall</span><span class="hint-touch">Swipe down to walk the hall</span><div class="chev hint-touch"></div></div>
+  <div id="caption" class="hud"><div class="y"></div><div class="t"></div><div class="ro"></div></div>
+  <div id="say" aria-live="polite"></div>
+  <div id="more" class="hud"><button class="btn" id="moreBtn">About this role</button></div>
+  <div id="rail" class="hud"><div class="dot"></div>
+    <div class="lab" style="top:-4px">Lobby</div><div class="lab" style="top:calc(72% - 4px)">Doors</div><div class="lab" style="bottom:-6px">Screen One</div></div>
+  <div id="remote" class="hud" role="group" aria-label="Remote control">
+    <div class="grip"><span><span class="led"></span>Remote</span><button id="rmMin" aria-label="Minimise remote" aria-expanded="true">–</button></div>
+    <div class="rm-screen"><span id="rmTitle">Showreel</span><span id="rmTime">0:00 / 0:00</span></div>
+    <input id="rmSeek" type="range" min="0" max="1000" step="1" value="0" aria-label="Position in the reel">
+    <div class="rm-row">
+      <button class="rk" id="rmBack" aria-label="Back 10 seconds">−10s</button>
+      <button class="rk big" id="playBtn" aria-label="Pause">❚❚</button>
+      <button class="rk" id="rmFwd" aria-label="Forward 10 seconds">+10s</button>
+    </div>
+    <div class="rm-row">
+      <button class="rk chan" data-reel="showreel">CH1 · Showreel</button>
+      <button class="rk chan" data-reel="action">CH2 · Action reel</button>
+    </div>
+    <div class="rm-vol" id="rmVolRow">
+      <label for="rmVol">Vol</label>
+      <input id="rmVol" type="range" min="0" max="100" step="1" value="100" aria-label="Reel volume">
+      <span id="rmVolNum">100</span>
+    </div>
+    <div class="rm-row">
+      <button class="rk" id="muteBtn">Mute</button>
+      <button class="rk" id="creditsBtn">Credits</button>
+      <button class="rk" id="ffBtn" aria-pressed="false" hidden>Speed up ▸▸</button>
+    </div>
+    <div class="rm-row">
+      <button class="rk" id="lobbyBtn">Lobby</button>
+      <button class="rk" id="boxBtn2">Box office</button>
+    </div>
+  </div>
+
+  <div id="choose" class="hud" aria-label="Choose a reel">
+    <div class="ch-title">Tonight's features</div>
+    <div class="ch-tix">
+      <button class="ticket mini" data-reel="showreel"><div class="in"><div class="a">ADMIT ONE</div><div class="b">Showreel</div><div class="c">4 minutes</div></div></button>
+      <button class="ticket mini" data-reel="action"><div class="in"><div class="a">ADMIT ONE</div><div class="b">Action Reel</div><div class="c">2½ minutes</div></div></button>
+    </div>
+  </div>
+  <div id="skipCd" class="hud"><button class="btn" id="skipCdBtn">Skip countdown</button></div>
+
+  <div id="boxoffice" class="panel" role="dialog" aria-modal="true" aria-labelledby="boTitle">
+    <div class="card bo-card">
+      <button class="x" data-close aria-label="Close">×</button>
+      <div class="bo-head">
+        <img class="bo-shot" src="assets/headshot-benjamin-fowler.jpg" alt="Benjamin Fowler headshot" loading="lazy">
+        <div>
+          <div class="eyebrow">Box office</div>
+          <h2 id="boTitle">Benjamin Fowler</h2>
+          <div class="role">Actor</div>
+          <a class="btn dl" href="assets/headshot-benjamin-fowler.jpg" download="Benjamin-Fowler-headshot.jpg" target="_blank" rel="noopener">Download headshot</a>
+        </div>
+      </div>
+      <p>Self-represented. For casting enquiries, please get in touch through Spotlight.</p>
+      <div class="row">
+        <a class="btn primary" href="https://www.spotlight.com/6215-7835-8858" target="_blank" rel="noopener">Spotlight profile</a>
+        <a class="btn" href="https://www.imdb.com/name/nm10716244/" target="_blank" rel="noopener">IMDb</a>
+        <button class="btn" id="boReel">Watch the showreel</button>
+      </div>
+      <!-- ====== CASTING STATS (from Spotlight, Sept 2026) — edit here; this block appears twice ====== -->
+      <dl class="stats">
+        <div><dt>Playing age</dt><dd>18–30</dd></div>
+        <div><dt>Height</dt><dd>6′2″ <small>(188 cm)</small></dd></div>
+        <div><dt>Based</dt><dd>London · Oxfordshire · Hampshire</dd></div>
+        <div><dt>Eyes · Hair</dt><dd>Hazel · Dark brown</dd></div>
+      </dl>
+      <div class="skills-label">Accents</div>
+      <ul class="skills">
+        <li>RP</li><li>English (standard)</li><li>Estuary</li><li>West Country</li><li>Scottish</li><li>Welsh</li>
+        <li>American (standard)</li><li>American (New York)</li><li>American (Southern)</li>
+      </ul>
+      <div class="skills-label">Action &amp; combat</div>
+      <ul class="skills">
+        <li>Sword &amp; shield</li><li>Stage combat</li><li>Archery</li><li>Crossbow</li><li>Musket handling, firing &amp; cleaning</li>
+        <li>Rifle handling &amp; firing</li><li>Shooting (incl. shotgun)</li><li>Cannon drill &amp; firing</li><li>Stunt falls</li><li>Bullet hits</li>
+        <li>Roman, Napoleonic &amp; WWI military drill</li><li>Battle formations</li>
+      </ul>
+      <div class="skills-label">Performance &amp; voice</div>
+      <ul class="skills">
+        <li>Comedy &amp; improv</li><li>Musical theatre</li><li>Singing</li><li>Promenade theatre</li><li>Public speaking</li><li>ADR</li><li>Voice over (own studio access)</li>
+      </ul>
+      <div class="skills-label">Behind the camera &amp; more</div>
+      <ul class="skills">
+        <li>Film Production degree</li><li>Assistant director</li><li>Camera operator</li><li>Director</li><li>Editor</li><li>Rugby</li><li>Car driving licence</li><li>Trained: LAMDA</li>
+      </ul>
+            <div class="fine">Spotlight PIN <code>6215-7835-8858</code> · <button class="linkish" id="boSimple">View the simple version of this site</button></div>
+    </div>
+  </div>
+
+  <div id="detail" class="panel" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+    <div class="card">
+      <button class="x" data-close aria-label="Close">×</button>
+      <img id="dImg" alt="">
+      <div>
+        <div class="eyebrow" id="dYear"></div>
+        <h2 id="dTitle"></h2>
+        <div class="role" id="dRole"></div>
+        <p id="dText"></p>
+        <div id="dStills" class="stills" hidden></div>
+        <div class="row">
+          <a class="btn" href="https://www.imdb.com/name/nm10716244/" target="_blank" rel="noopener">IMDb credits</a>
+          <a class="btn" href="https://www.spotlight.com/6215-7835-8858" target="_blank" rel="noopener">Spotlight</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Production still">
+    <img id="lbImg" alt="">
+    <video id="lbVid" controls playsinline preload="none" hidden></video>
+    <div class="lb-bar">
+      <button class="btn" id="lbPrev" aria-label="Previous still">‹ Prev</button>
+      <span id="lbCount"></span>
+      <button class="btn" id="lbNext" aria-label="Next still">Next ›</button>
+    </div>
+    <button class="lb-x" id="lbClose" aria-label="Close">×</button>
+  </div>
+
+  <main id="plain">
+    <div class="simple-bar"><button class="btn" id="back3d">Enter the 3D cinema</button></div>
+    <header class="p-head">
+      <img src="assets/headshot-benjamin-fowler.jpg" alt="Benjamin Fowler headshot" loading="lazy">
+      <div>
+        <h1>Benjamin Fowler</h1>
+        <div class="sub">ACTOR</div>
+        <p><a href="https://www.spotlight.com/6215-7835-8858">Spotlight profile</a> · <a href="https://www.imdb.com/name/nm10716244/">IMDb</a> · <a href="assets/headshot-benjamin-fowler.jpg" download="Benjamin-Fowler-headshot.jpg">Download headshot</a></p>
+      </div>
+    </header>
+    <section class="p-bio">
+      <p>I’m a versatile performer with solid experience on high-budget productions, particularly in special action roles, where I’ve worked closely with large crews and delivered under pressure. I bring a professional, focused approach to set, backed by a strong understanding of physical performance and storytelling.</p>
+      <p>I hold a degree in Film Production, giving me an all-rounded grasp of how a set runs and how different departments work together, which helps me collaborate effectively and adapt quickly. Alongside my action work, I recently played the lead in the short film Driftwood, where I focused on a more grounded, character-driven performance. I’m always keen to take on new challenges, expanding my skills and bringing honesty and energy to every role.</p>
+      <p class="p-rep">Self-represented · casting enquiries via <a href="https://www.spotlight.com/6215-7835-8858">Spotlight</a></p>
+    </section>
+    <section class="p-box">
+      <!-- ====== CASTING STATS (from Spotlight, Sept 2026) — edit here; this block appears twice ====== -->
+      <dl class="stats">
+        <div><dt>Playing age</dt><dd>18–30</dd></div>
+        <div><dt>Height</dt><dd>6′2″ <small>(188 cm)</small></dd></div>
+        <div><dt>Based</dt><dd>London · Oxfordshire · Hampshire</dd></div>
+        <div><dt>Eyes · Hair</dt><dd>Hazel · Dark brown</dd></div>
+      </dl>
+      <div class="skills-label">Accents</div>
+      <ul class="skills">
+        <li>RP</li><li>English (standard)</li><li>Estuary</li><li>West Country</li><li>Scottish</li><li>Welsh</li>
+        <li>American (standard)</li><li>American (New York)</li><li>American (Southern)</li>
+      </ul>
+      <div class="skills-label">Action &amp; combat</div>
+      <ul class="skills">
+        <li>Sword &amp; shield</li><li>Stage combat</li><li>Archery</li><li>Crossbow</li><li>Musket handling, firing &amp; cleaning</li>
+        <li>Rifle handling &amp; firing</li><li>Shooting (incl. shotgun)</li><li>Cannon drill &amp; firing</li><li>Stunt falls</li><li>Bullet hits</li>
+        <li>Roman, Napoleonic &amp; WWI military drill</li><li>Battle formations</li>
+      </ul>
+      <div class="skills-label">Performance &amp; voice</div>
+      <ul class="skills">
+        <li>Comedy &amp; improv</li><li>Musical theatre</li><li>Singing</li><li>Promenade theatre</li><li>Public speaking</li><li>ADR</li><li>Voice over (own studio access)</li>
+      </ul>
+      <div class="skills-label">Behind the camera &amp; more</div>
+      <ul class="skills">
+        <li>Film Production degree</li><li>Assistant director</li><li>Camera operator</li><li>Director</li><li>Editor</li><li>Rugby</li><li>Car driving licence</li><li>Trained: LAMDA</li>
+      </ul>
+    </section>
+    <h2>Showreel</h2>
+    <video id="plainReel" controls playsinline preload="none" src="../showreel.mp4" data-yt="Wbg1a59RsY4"></video>
+    <h2>Action reel</h2>
+    <video controls playsinline preload="none" src="../Benjamin%20Fowler%20Action%20Reel.mp4" data-yt="bxoczr9P0GU"></video>
+    <h2>Selected credits</h2>
+    <ul class="p-sel">
+      <li><div class="py">2026</div><div><b>Driftwood</b> <span class="pr">— Chris — Lead Actor</span><p>The leading role in this emotional short film about grief.</p></div></li>
+      <li><div class="py">2025</div><div><b>Britain&#x27;s Most Evil Killers</b> <span class="pr">— George Naylor — Lead Actor</span><p>The leading role of George Naylor in reenactment scenes of this well-established true crime documentary series.</p></div></li>
+      <li><div class="py">2024</div><div><b>Gladiator II</b> <span class="pr">— Roman Standard Bearer (SPACT)</span><p>In a special action role as a Roman standard bearer. This role required a week of special Roman army military boot camp to prepare, training with sword, shield, archery and marching drills.</p></div></li>
+      <li><div class="py">2023 &amp; 2025</div><div><b>House of the Dragon</b> <span class="pr">— Seasons 2 &amp; 3 — Darklyn Soldier &amp; Mooton Army (SPACT)</span><p>In a special action role that began with a month of work on the major battle sequence of Rook&#x27;s Rest in Season 2, returning for Season 3 in a fiery climactic sequence. This role required boot camp days for Season 2, training with sword, shield, archery, crossbows and battle formations.</p></div></li>
+      <li><div class="py">2023</div><div><b>World&#x27;s Most Evil Killers</b> <span class="pr">— Gary — Supporting Actor</span><p>In the supporting role of Gary, the killer&#x27;s brother, in this well-established true crime documentary series.</p></div></li>
+      <li><div class="py">2022</div><div><b>Napoleon</b> <span class="pr">— French, British &amp; Prussian Soldier (SPACT)</span><p>In the SPACT and supporting artist role of French, British and Prussian soldiers throughout a 5-month production. This role required an intensive 2-week boot camp to train in Napoleonic marching drills, musket handling, firing and cleaning, cannon drills and firing, as well as stunt falls and bullet hits.</p></div></li>
+      <li><div class="py">2021</div><div><b>Masters of the Air</b> <span class="pr">— Prisoner of War (Supporting Artist)</span><p>In the supporting artist role as a prisoner of war for 4 months of production.</p></div></li>
+      <li><div class="py">2019</div><div><b>1917</b> <span class="pr">— British Soldier (SPACT)</span><p>In the supporting artist and SPACT role of a British soldier in this WWI epic. Benjamin&#x27;s first role in film, which came with boot camp training in rifle handling, firing and marching drill before months on set.</p></div></li>
+    </ul>
+    <h2>All credits</h2>
+    <ul class="p-all">
+      <li><span class="py">2026</span> <b>Driftwood</b> <span class="pr">— Chris (Lead)</span></li>
+      <li><span class="py">2026</span> <b>Ministry of Time</b> <span class="pr">— Protester</span></li>
+      <li><span class="py">2026</span> <b>SNL UK</b> <span class="pr">— Supporting Artist (Opening Credits)</span></li>
+      <li><span class="py">2026</span> <b>Isle of Man</b> <span class="pr">— Paramedic</span></li>
+      <li><span class="py">2026</span> <b>Lord&#x27;s Day</b> <span class="pr">— Cameraman</span></li>
+      <li><span class="py">2026</span> <b>Grace</b> <span class="pr">— Club Goer</span></li>
+      <li><span class="py">2026</span> <b>Sonic 4</b> <span class="pr">— Eggman Ravegoer</span></li>
+      <li><span class="py">2026</span> <b>The Siege</b> <span class="pr">— Intelligence Officer</span></li>
+      <li><span class="py">2025–26</span> <b>Ted Lasso</b> <span class="pr">— Richmond Fan</span></li>
+      <li><span class="py">2025</span> <b>Britain&#x27;s Most Evil Killers</b> <span class="pr">— George Naylor (Lead)</span></li>
+      <li><span class="py">2025</span> <b>The Thomas Crown Affair</b> <span class="pr">— Event Photographer / Race Attendee</span></li>
+      <li><span class="py">2025</span> <b>House of the Dragon S3</b> <span class="pr">— Mooton Army (SPACT)</span></li>
+      <li><span class="py">2024</span> <b>Gladiator II</b> <span class="pr">— Roman Standard Bearer (SPACT)</span></li>
+      <li><span class="py">2024</span> <b>Vigil</b> <span class="pr">— Eric (Main Cast)</span></li>
+      <li><span class="py">2024</span> <b>The Perfect Town</b> <span class="pr">— Gatecrasher</span></li>
+      <li><span class="py">2024</span> <b>The Surface S2</b> <span class="pr">— Supporting Artist</span></li>
+      <li><span class="py">2024</span> <b>Made in Chelsea</b> <span class="pr">— Supporting Artist</span></li>
+      <li><span class="py">2023</span> <b>House of the Dragon S2</b> <span class="pr">— Darklyn Soldier — Special Action Performer</span></li>
+      <li><span class="py">2023</span> <b>World&#x27;s Most Evil Killers</b> <span class="pr">— Gary (Supporting)</span></li>
+      <li><span class="py">2023</span> <b>Beaumont</b> <span class="pr">— Soldier</span></li>
+      <li><span class="py">2023</span> <b>Rivals</b> <span class="pr">— Supporting Artist</span></li>
+      <li><span class="py">2023</span> <b>Ghostbusters: Frozen Empire</b> <span class="pr">— Coney Island Sprite</span></li>
+      <li><span class="py">2023</span> <b>Dublin Down</b> <span class="pr">— Hotel Guest</span></li>
+      <li><span class="py">2023</span> <b>The Amateur</b> <span class="pr">— Eurostar Passenger</span></li>
+      <li><span class="py">2023</span> <b>Surface Season 2</b> <span class="pr">— Gentleman&#x27;s Club Member</span></li>
+      <li><span class="py">2023</span> <b>Big Boys Season 2</b> <span class="pr">— Fresher Student</span></li>
+      <li><span class="py">2023</span> <b>Six Triple Eight</b> <span class="pr">— WW2 American Soldier</span></li>
+      <li><span class="py">2023</span> <b>Sex Education</b> <span class="pr">— Passerby</span></li>
+      <li><span class="py">2022</span> <b>The Buckingham Murders</b> <span class="pr">— Passerby</span></li>
+      <li><span class="py">2022</span> <b>Get Millie Black</b> <span class="pr">— Builder, JB</span></li>
+      <li><span class="py">2022</span> <b>Napoleon</b> <span class="pr">— French Revolutionary, British &amp; Prussian Soldier</span></li>
+      <li><span class="py">2021</span> <b>Masters of the Air</b> <span class="pr">— Prisoner of War</span></li>
+      <li><span class="py">2019</span> <b>1917</b> <span class="pr">— British Soldier</span></li>
+    </ul>
+    <noscript><p>Turn on JavaScript to step inside the 3D cinema.</p></noscript>
+  </main>
+
+  <div id="gate">
+    <button class="ticket" id="enter" aria-label="Enter the cinema">
+      <span class="no">Nº 0001</span>
+      <div class="in">
+        <div class="a">ADMIT ONE</div>
+        <div class="b">Benjamin Fowler</div>
+        <div class="c">Actor · Showreel &amp; Selected Credits</div>
+        <div class="d">TAP TO ENTER THE CINEMA</div>
+      </div>
+    </button>
+    <div class="gate-alt">
+      <button class="btn" id="enterReel">Go straight to the showreel ▸</button>
+      <button class="linkish" id="gateSimple">or view the simple version</button>
+    </div>
+  </div>
+  <div id="loading">Setting the stage…</div>
+
+  <!-- reels load only when needed (see REELS below): nothing big downloads when the page opens -->
+  <video id="reel" preload="none" playsinline style="display:none"></video>
+  <script>
+    // On the live site the reels play from YouTube (yt = the video ID from the YouTube link).
+    // Opened from disk (or if YouTube can't load) the site falls back to the video files in src.
+    window.REELS = [
+      { key: 'showreel', title: 'Showreel', yt: 'Wbg1a59RsY4', src: '../showreel.mp4' },
+      { key: 'action', title: 'Action reel', yt: 'bxoczr9P0GU', src: '../Benjamin%20Fowler%20Action%20Reel.mp4' },
+    ];
+    window.USE_YT = /^https?:$/.test(location.protocol) && !window.NO_YT;
+    // simple version: swap the video files for YouTube players on the live site
+    if (window.USE_YT) document.querySelectorAll('#plain video[data-yt]').forEach(function (v) {
+      var w = document.createElement('div'); w.className = 'ytwrap';
+      var f = document.createElement('iframe');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + v.dataset.yt + '?rel=0&playsinline=1&modestbranding=1';
+      f.title = v.dataset.yt === 'Wbg1a59RsY4' ? 'Benjamin Fowler showreel' : 'Benjamin Fowler action reel';
+      f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true; f.loading = 'lazy';
+      if (v.id) w.id = v.id;
+      w.appendChild(f); v.replaceWith(w);
+    });
+  </script>
+
+  <script>
+    // simple version: a plain, fast page with the reels, stats, skills and credits
+    window.setSimple = function (on) {
+      if (on) {
+        document.body.classList.add('nowebgl', 'simple-chosen'); document.body.classList.remove('locked');
+        var r = document.getElementById('reel'); if (r) r.pause();
+        window.dispatchEvent(new Event('bf-simple')); window.scrollTo(0, 0);
+      } else {
+        document.querySelectorAll('#plain video').forEach(function (v) { v.pause(); });
+        if (!window.__bf3dReady) { location.hash = ''; location.reload(); return; }
+        document.body.classList.remove('nowebgl', 'simple-chosen'); window.scrollTo(0, 0);
+        window.dispatchEvent(new Event('bf-3d'));
+      }
+    };
+    document.getElementById('gateSimple').addEventListener('click', function () { window.setSimple(true); });
+    document.getElementById('back3d').addEventListener('click', function () { window.setSimple(false); });
+    if (location.hash === '#simple') window.setSimple(true);
+  </script>
+  <script src="assets/three.bundle.js"></script>
+  <script src="assets/images.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
