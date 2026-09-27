@@ -1108,7 +1108,7 @@ const ui = {
 };
 let targetP = 0, p = 0, entered = false, lastCaption = null;
 /* The walk is driven directly by the wheel / touch (the page itself doesn't scroll).
-   Inverted on purpose: wheel UP moves you forward; on phones, swipe DOWN moves you forward. */
+   Mouse wheel DOWN moves you forward; on phones, swipe DOWN moves you forward (inverted on purpose). */
 const WALK_SCREENS = 25;
 // the hallway keeps its unhurried pace; from the last poster to the doors and down to your seat moves 3x faster
 const DOORS_SPEED = 3;
@@ -1120,7 +1120,7 @@ addEventListener('wheel', (e) => {
   if (!entered || panelOpen || inPanel(e)) return;
   e.preventDefault();
   const px = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
-  targetP = clamp(targetP - (px / (WALK_SCREENS * innerHeight)) * zoneSpeed(targetP), 0, 1); // wheel up (negative deltaY) = forward
+  targetP = clamp(targetP + (px / (WALK_SCREENS * innerHeight)) * zoneSpeed(targetP), 0, 1); // wheel down (positive deltaY) = forward
   walkVel = 0;
 }, { passive: false });
 let touchY = null, touchT = 0;
@@ -1639,9 +1639,9 @@ addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') { e.preventDefault(); seekTo(video.currentTime + 10); return; }
     if (e.key === 'ArrowLeft') { e.preventDefault(); seekTo(video.currentTime - 10); return; }
   }
-  // arrows match the wheel: Up / Right = forward, Down / Left = back
-  if (['ArrowUp', 'ArrowRight', 'PageUp'].includes(e.key)) { e.preventDefault(); stepStop(1); }
-  if (['ArrowDown', 'ArrowLeft', 'PageDown'].includes(e.key)) { e.preventDefault(); stepStop(-1); }
+  // arrows match the wheel: Down / Right = forward, Up / Left = back
+  if (['ArrowDown', 'ArrowRight', 'PageDown'].includes(e.key)) { e.preventDefault(); stepStop(1); }
+  if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); stepStop(-1); }
 });
 
 // click / tap posters and the box office

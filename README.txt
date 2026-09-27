@@ -25,7 +25,7 @@ HOW IT WORKS
 - Click the ticket to enter (this also allows the reel to play with sound).
 - A little floating usher leads the way, points out each poster, shows you through the
   doors to your seat, then floats off when the lights go down.
-- Scroll the mouse wheel UP to walk forward (down to go back). On phones, swipe DOWN
+- Scroll the mouse wheel DOWN to walk forward (up to go back). On phones, swipe DOWN
   to walk forward. You turn to face each poster as you pass it.
   (To change the walking speed, edit WALK_SCREENS near "wheel" in assets/app.js:
   bigger = slower.)
