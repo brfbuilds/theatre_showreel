@@ -772,7 +772,7 @@ function makeYTVideo(onFail) {
   const mount = document.createElement('div'); host.appendChild(mount);
   const ended = [];
   let player = null, ready = false, failed = false, id = '', builtId = '', st = -1;
-  let paused = true, isEnded = false, muted = false, vol = 1, waiters = [];
+  let paused = true, isEnded = false, muted = false, vol = 1, waiters = [], wantPlay = false;
   const settle = (ok) => { const w = waiters; waiters = []; w.forEach((f) => f(ok)); };
   const fail = () => { if (failed || ready) return; failed = true; onFail(); };
   function build() {
@@ -789,7 +789,8 @@ function makeYTVideo(onFail) {
         },
         onStateChange: (e) => {
           st = e.data;
-          if (st === 1) { paused = false; isEnded = false; settle(true); }
+          if (st === 1) { paused = false; isEnded = false; wantPlay = false; settle(true); }
+          else if (st === 5 && wantPlay) { player.playVideo(); } // a new reel finished loading: start it
           else if (st === 2) { paused = true; }
           else if (st === 0) { paused = true; isEnded = true; ended.forEach((fn) => fn()); }
         },
@@ -816,14 +817,14 @@ function makeYTVideo(onFail) {
     get ended() { return isEnded; },
     get duration() { const d = ready ? player.getDuration() : 0; return d > 0 ? d : NaN; },
     get currentTime() { return ready ? (player.getCurrentTime() || 0) : 0; },
-    set currentTime(t) { if (ready) { player.seekTo(Math.max(0, t), true); isEnded = false; if (paused && st !== 1) player.pauseVideo(); } },
+    set currentTime(t) { if (ready) { if (st === 5 || st === -1) { if (t > 0.5) player.seekTo(t, true); return; } player.seekTo(Math.max(0, t), true); isEnded = false; if (paused && !wantPlay && st !== 1) player.pauseVideo(); } },
     get muted() { return muted; },
     set muted(m) { muted = !!m; if (ready) { if (muted) player.mute(); else player.unMute(); } },
     get volume() { return vol; },
     set volume(v) { vol = v; if (ready) player.setVolume(Math.round(v * 100)); },
     play() {
       if (!ready) return Promise.reject(new Error('not ready'));
-      paused = false; isEnded = false; player.playVideo();
+      paused = false; isEnded = false; wantPlay = true; player.playVideo();
       if (st === 1) return Promise.resolve();
       return new Promise((res, rej) => {
         let done = false;
@@ -833,12 +834,13 @@ function makeYTVideo(onFail) {
         const check = (n) => setTimeout(() => {
           if (done || st === 1) return;
           if (st === 3 && n < 4) { check(n + 1); return; } // still buffering
-          waiters = waiters.filter((x) => x !== w); paused = true; w(false);
+          if (st === 5 && n < 2) { player.playVideo(); check(n + 1); return; } // reel still cueing
+          waiters = waiters.filter((x) => x !== w); paused = true; wantPlay = false; w(false);
         }, 2500);
         check(0);
       });
     },
-    pause() { paused = true; if (ready) player.pauseVideo(); },
+    pause() { paused = true; wantPlay = false; if (ready) player.pauseVideo(); },
     addEventListener(ev, fn) { if (ev === 'ended') ended.push(fn); },
   };
 }
