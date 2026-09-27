@@ -806,7 +806,8 @@ function makeYTVideo(onFail) {
       const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; sc.async = true; sc.dataset.ytapi = '1';
       sc.onerror = fail; document.head.appendChild(sc);
     }
-    setTimeout(() => { if (!ready) fail(); }, 12000); // blocked or offline: use the video files
+    // YouTube blocked or offline: use the video files. Once YouTube has loaded, keep waiting for it.
+    setTimeout(() => { if (!(window.YT && window.YT.Player)) fail(); }, 15000);
   }
   return {
     el: host, style: host.style, preload: 'none', isYT: true,
