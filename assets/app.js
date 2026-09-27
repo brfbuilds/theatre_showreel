@@ -125,7 +125,7 @@ try {
   if (!renderer.getContext()) throw new Error('no webgl');
 } catch (e) {
   // no 3D available: show the plain page with credits, links and the reel
-  document.body.classList.remove('locked'); document.body.classList.add('nowebgl');
+  document.body.classList.remove('locked'); document.body.classList.add('nowebgl'); document.documentElement.classList.add('simple-root');
   const g = $('#gate'); if (g) g.remove();
   return;
 }
@@ -1116,8 +1116,10 @@ const zoneSpeed = (v) => lerp(1, DOORS_SPEED, smooth(P_WALK_END - 0.02, P_WALK_E
 let walkVel = 0;                    // touch momentum, in progress-per-second
 // input aimed at a panel, slider or on-screen control must not also move you through the building
 const inPanel = (e) => !!(e.target && e.target.closest && e.target.closest('.panel, #lightbox, #remote, #musicVol, #choose, input, button'));
+// the simple version is a normal page: leave the wheel and swipes to scroll it
+const simpleOn = () => document.body.classList.contains('nowebgl');
 addEventListener('wheel', (e) => {
-  if (!entered || panelOpen || inPanel(e)) return;
+  if (!entered || panelOpen || inPanel(e) || simpleOn()) return;
   e.preventDefault();
   const px = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
   targetP = clamp(targetP + (px / (WALK_SCREENS * innerHeight)) * zoneSpeed(targetP), 0, 1); // wheel down (positive deltaY) = forward
@@ -1125,7 +1127,7 @@ addEventListener('wheel', (e) => {
 }, { passive: false });
 let touchY = null, touchT = 0;
 addEventListener('touchstart', (e) => {
-  if (!entered || panelOpen || inPanel(e) || e.touches.length !== 1) { touchY = null; return; }
+  if (!entered || panelOpen || inPanel(e) || simpleOn() || e.touches.length !== 1) { touchY = null; return; }
   touchY = e.touches[0].clientY; touchT = performance.now(); walkVel = 0;
 }, { passive: true });
 addEventListener('touchmove', (e) => {
@@ -1633,7 +1635,7 @@ addEventListener('keydown', (e) => {
     e.preventDefault(); return;
   }
   if (e.key === 'Escape' && panelOpen) { closePanel(); return; }
-  if (!entered || panelOpen) return;
+  if (!entered || panelOpen || simpleOn()) return;
   if (['reel', 'credits', 'done'].includes(show.state)) {
     if (e.key === ' ' || e.key === 'k') { e.preventDefault(); togglePlay(); return; }
     if (e.key === 'ArrowRight') { e.preventDefault(); seekTo(video.currentTime + 10); return; }
